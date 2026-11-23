@@ -26,12 +26,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-cert
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3000
+ENV PATH="/app/node_modules/.bin:${PATH}"
 
 RUN groupadd -r api && useradd -r -g api -d /app api
 
 COPY --from=builder /app/dist/api ./api
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/src/prisma ./src/prisma
+COPY --from=builder /app/src ./src
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/tsconfig*.json ./
 
@@ -40,4 +41,4 @@ USER api
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy --schema=./src/prisma/schema.prisma && (./node_modules/.bin/prisma db seed --schema=./src/prisma/schema.prisma || true) && node api/main.js"]
+CMD ["sh", "-c", "prisma migrate deploy --schema=./src/prisma/schema.prisma && (prisma db seed || true) && node api/main.js"]
