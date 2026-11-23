@@ -1,0 +1,9 @@
+node_modules/
+dist/
+tmp/
+.angular/
+.nx/
+.env
+.env.*
+*.log
+get-docker.sh
