@@ -27,7 +27,7 @@ ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3000
 
-RUN groupadd -r api && adduser --system -G api api
+RUN groupadd -r api && useradd -r -g api -d /app api
 
 COPY --from=builder /app/dist/api ./api
 COPY --from=builder /app/node_modules ./node_modules
