@@ -1,0 +1,57 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: realworld-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-rworld_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rworld_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-rworld_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - realworld-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rworld_user} -d ${POSTGRES_DB:-rworld_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: realworld-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      JWT_SECRET: ${JWT_SECRET:-supersecretkey}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-rworld_user}:${POSTGRES_PASSWORD:-rworld_pass}@db:5432/${POSTGRES_DB:-rworld_db}?schema=public
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - realworld-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: realworld-frontend
+    restart: unless-stopped
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+    networks:
+      - realworld-net
+
+volumes:
+  postgres_data:
+
+networks:
+  realworld-net:
+    driver: bridge
