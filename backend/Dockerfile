@@ -27,15 +27,17 @@ ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3000
 
-RUN groupadd -r api && useradd -r -g api -d /app api
+RUN groupadd -r api && adduser --system -G api api
 
 COPY --from=builder /app/dist/api ./api
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/src/prisma ./src/prisma
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/tsconfig*.json ./
 
 RUN chown -R api:api /app
 USER api
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy --schema=./src/prisma/schema.prisma && node api/main.js"]
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy --schema=./src/prisma/schema.prisma && (./node_modules/.bin/prisma db seed --schema=./src/prisma/schema.prisma || true) && node api/main.js"]
