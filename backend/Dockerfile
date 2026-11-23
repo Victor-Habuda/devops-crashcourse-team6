@@ -1,9 +1,8 @@
 # --- Етап 1: Збірка проєкту ---
-FROM node:18-bullseye-slim AS builder
+FROM node:18-bookworm-slim AS builder
 
 WORKDIR /app
 
-# Встановлюємо openssl та сертифікати, щоб Prisma коректно визначила OpenSSL 1.1.x
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
@@ -17,7 +16,7 @@ COPY . .
 RUN npx nx build api --prod
 
 # --- Етап 2: Продакшн-образ ---
-FROM node:18-bullseye-slim AS runner
+FROM node:18-bookworm-slim AS runner
 
 WORKDIR /app
 
