@@ -29,6 +29,22 @@ services:
     networks:
       - monitoring
 
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:latest
+    container_name: monitoring-postgres-exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_URI: "realworld-ghcr-db-1:5432/rworld_db?sslmode=disable"
+      DATA_SOURCE_USER: ${POSTGRES_USER:?Set POSTGRES_USER}
+      DATA_SOURCE_PASS: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    env_file:
+      - ../.env
+    ports:
+      - "9187:9187"
+    networks:
+      - monitoring
+      - realworld
+
   node-exporter:
     image: prom/node-exporter:latest
     container_name: monitoring-node-exporter
@@ -82,3 +98,6 @@ volumes:
 networks:
   monitoring:
     driver: bridge
+  realworld:
+    external: true
+    name: realworld-ghcr_realworld-net
