@@ -1,0 +1,55 @@
+name: Discord PR notifications
+on:
+  pull_request_target:
+    types: [opened, reopened, closed, ready_for_review, converted_to_draft]
+
+permissions: {}
+
+jobs:
+  notify:
+    name: Send PR event to Discord
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Post to Discord webhook
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          ACTION: ${{ github.event.action }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "::warning::DISCORD_WEBHOOK_URL secret is not set, skipping"
+            exit 0
+          fi
+
+          payload=$(jq --arg action "$ACTION" '
+            .pull_request as $pr
+            | (if $action == "opened" then ["New pull request", 3066993]
+               elif $action == "reopened" then ["PR reopened", 3066993]
+               elif $action == "ready_for_review" then ["Ready for review", 3066993]
+               elif $action == "converted_to_draft" then ["Converted to draft", 9807270]
+               elif $pr.merged then ["PR merged", 10181046]
+               else ["PR closed", 15158332] end) as [$event, $color]
+            | {
+                username: "GitHub",
+                allowed_mentions: { parse: [] },
+                embeds: [{
+                  author: { name: "\($event) · \(.repository.full_name)" },
+                  title: ("#\($pr.number) \($pr.title)" | .[0:256]),
+                  url: $pr.html_url,
+                  color: $color,
+                  description: (if ($pr.body // "") == "" then "_No description_"
+                                else ($pr.body | if length > 500 then .[0:499] + "…" else . end) end),
+                  thumbnail: { url: $pr.user.avatar_url },
+                  fields: [
+                    { name: "Author", value: $pr.user.login, inline: true },
+                    { name: "Branch", value: "`\($pr.head.ref)` → `\($pr.base.ref)`", inline: true }
+                  ],
+                  timestamp: $pr.updated_at
+                }]
+              }' "$GITHUB_EVENT_PATH")
+
+          curl --fail-with-body --silent --show-error \
+            -H "Content-Type: application/json" \
+            -d "$payload" \
+            "$DISCORD_WEBHOOK_URL"

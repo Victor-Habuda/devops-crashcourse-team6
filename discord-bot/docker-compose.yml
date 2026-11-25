@@ -1,0 +1,18 @@
+services:
+  discord-bot:
+    image: ghcr.io/victor-habuda/devops-crashcourse-team6-discord-bot:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: discord-bot
+    restart: on-failure
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      GITHUB_REPO: ${GITHUB_REPO:-Victor-Habuda/devops-crashcourse-team6}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
