@@ -14,6 +14,21 @@ services:
     networks:
       - monitoring
 
+  blackbox-exporter:
+    image: prom/blackbox-exporter:latest
+    container_name: monitoring-blackbox-exporter
+    restart: unless-stopped
+    volumes:
+      - ./blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+    command:
+      - '--config.file=/etc/blackbox_exporter/config.yml'
+    ports:
+      - "9115:9115"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - monitoring
+
   node-exporter:
     image: prom/node-exporter:latest
     container_name: monitoring-node-exporter
