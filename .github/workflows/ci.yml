@@ -22,6 +22,11 @@ jobs:
       - name: Build images
         run: docker compose build
 
+      - name: Build and smoke-test Discord bot
+        run: |
+          docker build -t discord-bot:ci ./discord-bot
+          docker run --rm discord-bot:ci python -c "import bot.main"
+
       - name: Start application
         run: docker compose up -d --no-build
 
@@ -108,5 +113,17 @@ jobs:
           tags: |
             ghcr.io/${{ steps.images.outputs.repository }}-frontend:latest
             ghcr.io/${{ steps.images.outputs.repository }}-frontend:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+
+      - name: Build and publish Discord bot
+        uses: docker/build-push-action@v6
+        with:
+          context: ./discord-bot
+          file: ./discord-bot/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ steps.images.outputs.repository }}-discord-bot:latest
+            ghcr.io/${{ steps.images.outputs.repository }}-discord-bot:sha-${{ github.sha }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
