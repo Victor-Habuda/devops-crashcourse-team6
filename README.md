@@ -52,3 +52,38 @@ docker compose -f docker-compose.ghcr.yml up -d --no-build
 To deploy an exact CI/CD build, set `IMAGE_TAG=sha-<full-commit-sha>` in `.env` and run the same `pull` and `up` commands. Both images are selected by the same tag.
 
 **Note:** The default GHCR Compose project is named `realworld-ghcr`. It uses its own PostgreSQL volume, separate from the source-build Compose project. The two stacks can coexist when their host ports do not overlap.
+
+## Monitoring and Alerting
+
+The monitoring and alerting stack is defined in `monitoring/docker-compose.monitoring.yml` and includes **Prometheus**, **Grafana** (with automatic datasource and dashboard provisioning), **Alertmanager** (with Discord notifications), **Node Exporter**, **cAdvisor**, **Blackbox Exporter**, and **PostgreSQL Exporter**.
+
+### Requirements
+
+- Docker Engine and Docker Compose v2.
+- The GHCR application stack (`docker-compose.ghcr.yml`) must be running first so the external network `realworld-ghcr_realworld-net` and database container (`realworld-ghcr-db-1`) exist.
+- `.env` in the repository root must contain:
+  - `POSTGRES_USER` and `POSTGRES_PASSWORD` (required by `postgres-exporter`).
+  - `DISCORD_WEBHOOK_URL` (used to send alerts to Discord). Do not commit `.env`.
+
+### Start monitoring
+
+Run from the repository root:
+
+```bash
+docker compose --env-file .env -f monitoring/docker-compose.monitoring.yml config --quiet
+docker compose --env-file .env -f monitoring/docker-compose.monitoring.yml up -d
+docker compose --env-file .env -f monitoring/docker-compose.monitoring.yml ps
+```
+
+### Monitoring interfaces
+
+| Service | URL |
+| --- | --- |
+| Grafana | http://localhost:3002 |
+| Prometheus | http://localhost:9090 |
+| Alertmanager | http://localhost:9093 |
+
+### Stop monitoring
+
+```bash
+docker compose --env-file .env -f monitoring/docker-compose.monitoring.yml down
