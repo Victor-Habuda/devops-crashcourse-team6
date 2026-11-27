@@ -5,6 +5,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -93,6 +94,21 @@ services:
     networks:
       - monitoring
 
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: monitoring-alertmanager
+    restart: unless-stopped
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+    ports:
+      - "9093:9093"
+    networks:
+      - monitoring
+    secrets:
+      - discord_webhook_url
+
 volumes:
   prometheus_data:
   grafana_data:
@@ -103,3 +119,7 @@ networks:
   realworld:
     external: true
     name: realworld-ghcr_realworld-net
+
+secrets:
+  discord_webhook_url:
+    environment: DISCORD_WEBHOOK_URL

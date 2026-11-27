@@ -1,0 +1,56 @@
+groups:
+  - name: infrastructure-alerts
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 * (1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[1m]))) > 85
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is above 85% for more than 1 minute."
+
+      - alert: HighMemoryUsage
+        expr: 100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 90
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is above 90% for more than 1 minute."
+
+      - alert: LowDiskSpace
+        expr: 100 * (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs", mountpoint="/"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs", mountpoint="/"}) < 10
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low disk space"
+          description: "Less than 10% disk space is available on root filesystem."
+
+      - alert: BackendDown
+        expr: probe_success{job="blackbox-http", instance="http://host.docker.internal:3001"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backend is down"
+          description: "Backend endpoint is not responding."
+
+      - alert: FrontendDown
+        expr: probe_success{job="blackbox-http", instance="http://host.docker.internal:4201"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Frontend is down"
+          description: "Frontend endpoint is not responding."
+
+      - alert: PostgreSQLExporterDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL exporter is down"
+          description: "Prometheus cannot scrape the PostgreSQL exporter."
